@@ -2,15 +2,21 @@ package camati.docker_manager.services;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 
 import camati.docker_manager.ports.ContainerServicePort;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
+@Service
 public class ContainerService implements ContainerServicePort {
   private final DockerClient dockerClient;
+  
+
+  public ContainerService(DockerClient dockerClient) {
+    this.dockerClient = dockerClient;
+  }
 
   @Override
   public void createContainer(String imageName) {
