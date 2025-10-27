@@ -13,6 +13,13 @@ public class ContainerService implements ContainerServicePort {
   private final DockerClient dockerClient;
 
   @Override
+  public void createContainer(String imageName) {
+    try (var cmd = dockerClient.createContainerCmd(imageName)) {
+      cmd.exec();
+    }
+  }
+
+  @Override
   public List<Container> listContainers(boolean showAll) {
     return dockerClient.listContainersCmd()
         .withShowAll(showAll)
