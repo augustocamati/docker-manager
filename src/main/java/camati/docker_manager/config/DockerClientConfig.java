@@ -2,10 +2,10 @@ package camati.docker_manager.config;
 
 import java.time.Duration;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
 
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
@@ -15,34 +15,43 @@ import com.github.dockerjava.httpclient5.ApacheDockerHttpClient;
 
 @Configuration
 public class DockerClientConfig {
-  @Value("${docker.socket.path}")
-  private String dockerSocketPath;
+  private String dockerHost = "tcp://localhost:2375";
+       
+
+  private static final Logger log = LoggerFactory.getLogger(DockerClientConfig.class);
 
   @Bean
-  @Lazy(false)
   public DockerClient buildDockerClient() {
-    DefaultDockerClientConfig.Builder dockerClientConfigBuilder = DefaultDockerClientConfig
-        .createDefaultConfigBuilder()
-        .withDockerHost(dockerSocketPath)
-        .withApiVersion(RemoteApiVersion.VERSION_1_24)
-        .withDockerTlsVerify(false);
+  
+    
 
+    log.info("Usando Docker host: {}", dockerHost);
 
-    DefaultDockerClientConfig dockerClientConfig = dockerClientConfigBuilder
+    DefaultDockerClientConfig dockerClientConfig = DefaultDockerClientConfig.createDefaultConfigBuilder()
+        .withDockerHost(dockerHost)
+        .withApiVersion(RemoteApiVersion.VERSION_1_41)
+        .withDockerTlsVerify(false)
         .build();
 
     ApacheDockerHttpClient dockerHttpClient = new ApacheDockerHttpClient.Builder()
         .dockerHost(dockerClientConfig.getDockerHost())
-        .maxConnections(5)
-        .connectionTimeout(Duration.ofMillis(300))
-        .responseTimeout(Duration.ofSeconds(3))
+        .maxConnections(10)
+        .connectionTimeout(Duration.ofSeconds(2))
+        .responseTimeout(Duration.ofSeconds(10))
         .build();
 
     DockerClient client = DockerClientBuilder.getInstance(dockerClientConfig)
         .withDockerHttpClient(dockerHttpClient)
         .build();
 
-    client.pingCmd().exec();
+    try {
+      client.pingCmd().exec();
+      log.info("✅ Conexão com Docker estabelecida com sucesso.");
+    } catch (Exception e) {
+      log.error("❌ Falha ao conectar ao Docker em {}: {}", dockerHost, e.getMessage());
+      log.error("Verifique se o Docker está em execução e acessível (porta 2375 ou /var/run/docker.sock)");
+      throw new RuntimeException("Não foi possível conectar ao Docker host: " + dockerHost, e);
+    }
 
     return client;
   }
