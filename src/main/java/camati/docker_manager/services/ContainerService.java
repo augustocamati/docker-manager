@@ -39,7 +39,7 @@ public class ContainerService implements ContainerServicePort {
 
   @Override
   public void stopContainer(String id) {
-    dockerClient.startContainerCmd(id).exec();
+    dockerClient.stopContainerCmd(id).exec();
   }
 
   @Override
